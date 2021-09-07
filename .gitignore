@@ -1,0 +1,11 @@
+.vscode
+/.vscode
+/v2ray-linux-64
+.git
+*.dat
+v2ray
+v2man
+*.exe
+*.json
+*.sh
+*.txt

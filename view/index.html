@@ -1,0 +1,285 @@
+{{define "index"}}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>v2管理</title>
+    <link rel="stylesheet" href="/layui/css/layui.css">
+    <link rel="stylesheet" href="/layui/jsoneditor.css">
+    <script src="/layui/layui.js"></script>
+    <script src="/layui/jquery-2.1.4.min.js"></script>
+
+    <script src="/layui/jsoneditor.js"></script>
+
+    <style>
+        div.jsoneditor-select {
+            z-index: 2147483648;
+        }
+
+        #edit {
+            display: none;
+        }
+
+        .layui-table-body {
+            overflow-x: hidden;
+        }
+
+        .layui-body {
+            bottom: unset;
+            overflow-x: hidden;
+        }
+
+        .ui_lineblock {
+            margin-bottom: 5px;
+            max-width: 300px;
+            display: flex;
+            justify-content: space-between;
+
+        }
+
+        #logs {
+            background-color: black;
+            height: 100%;
+            padding: 3px;
+            max-height: 120px;
+            box-sizing: border-box;
+            color: whitesmoke;
+            overflow-y: scroll;
+        }
+    </style>
+
+</head>
+
+<body>
+    <div class="layui-layout layui-layout-admin">
+        {{template "header" .}}
+
+        <div class="layui-body" style="left: 0;">
+            <!-- 内容主体区域 -->
+
+            <div class="layui-row layui-col-space15">
+                <div class="layui-col-md6">
+                    <div class="layui-panel" style="height: 120px;">
+                        <div style="padding: 30px;">
+                            <div class="ui_lineblock">
+                                <div>v2ray 配置文件:</div>
+                                <div id="v2config"></div>
+                            </div>
+                            <div class="ui_lineblock">
+                                <div>v2ray PID:</div>
+                                <div id="v2pid"></div>
+                            </div>
+                            <div class="ui_lineblock">
+                                <div></div>
+                                <a class="layui-btn layui-btn-xs" onclick="editv2config()"> 编辑v2ray config </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-col-md6">
+                    <div class="layui-panel" style="height: 120px;">
+                        <div id="logs">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+            <div class="layui-collapse" style="clear: both;">
+                <div class="layui-colla-item">
+                    <h2 class="layui-colla-title">入站</h2>
+                    <div class="layui-colla-content layui-show">
+
+                        <a class="layui-btn layui-btn-xs" onclick="Createinbound(0)"> 创建一个ws+vmess入站 </a>
+
+                        <table class="layui-table" id="inbounds" lay-filter="inbounds">
+                        </table>
+
+                    </div>
+                </div>
+                <div class="layui-colla-item">
+                    <h2 class="layui-colla-title">出站</h2>
+                    <div class="layui-colla-content layui-show">
+                        <table class="layui-table" id="outbounds" lay-filter="outbounds">
+                        </table>
+                    </div>
+                </div>
+                <div class="layui-colla-item">
+                    <h2 class="layui-colla-title">路由</h2>
+                    <div class="layui-colla-content layui-show">
+
+                        <a class="layui-btn layui-btn-xs" onclick="editroutings()"> 编辑路由源码 </a>
+
+                        <a class="layui-btn layui-btn-xs" onclick="CreateDomainRou(0)"> 创建指定域名直连路由 </a>
+                        <a class="layui-btn layui-btn-xs" onclick="CreateDomainRou(1)"> 创建指定IP直连路由 </a>
+
+                        <table class="layui-table" id="routing" lay-filter="routing">
+                        </table>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {{template "footer" .}}
+
+    </div>
+
+    <div id="edit" style="display: none;">
+        <div id="editor"></div>
+    </div>
+
+    <div id="toggleproxy" style="display: none;margin: 5px 10px;">
+        <form class="layui-form" action="" lay-filter="toggleproxy">
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">出口Tag</label>
+                <div class="layui-input-block" id="proxytagview">
+
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">支持传输层</label>
+                <div class="layui-input-block">
+                    <input type="checkbox" name="transportLayer" lay-skin="switch" lay-text="ON|OFF">
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div id="selectout" style="display: none;margin: 5px 10px;">
+        <form class="layui-form" action="" lay-filter="selectout">
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">出口Tag</label>
+                <div class="layui-input-block" id="selectoutview">
+
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div id="CreateDomainRou" style="display: none;    height: 100%">
+        <form class="layui-form" style="    height: 100%" onsubmit=" return false" lay-filter="CreateDomainRou">
+            <textarea placeholder="格式:domain:xxxx.com 或其它支持的格式, ，一行一条" name="domainlist" class="layui-textarea"
+                style="    height: 100%;"></textarea>
+        </form>
+    </div>
+
+    <div id="CreateIpRou" style="display: none;    height: 100%">
+        <form class="layui-form" style="    height: 100%" onsubmit=" return false" lay-filter="CreateIpRou">
+            <textarea placeholder="格式:x.x.x.x 或其它支持的格式, ，一行一条" name="domainlist" class="layui-textarea"
+                style="    height: 100%;"></textarea>
+        </form>
+    </div>
+
+    <div id="login" style="display: none;margin: 5px 10px;">
+        <form class="layui-form" action="" lay-filter="login">
+            <div class="layui-form-item">
+                <label class="layui-form-label">user</label>
+                <div class="layui-input-block">
+                    <input type="text" name="user" required lay-verify="required" placeholder="请输入user"
+                        autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">pass</label>
+                <div class="layui-input-block">
+                    <input type="password" name="pass" required lay-verify="required" placeholder="请输入pass"
+                        autocomplete="off" class="layui-input">
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div id="Createinbound" style="display: none;margin: 5px 10px;">
+        <form class="layui-form" action="" lay-filter="Createinbound">
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">入站Tag</label>
+                <div class="layui-input-block">
+                    <input type="text" name="tag" required lay-verify="required" placeholder="请输入Tag" autocomplete="off"
+                        class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">监听ip</label>
+                <div class="layui-input-block">
+                    <input type="number" name="ip" required lay-verify="required" placeholder="请输入ip,默认:0.0.0.0"
+                        autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">入站Port</label>
+                <div class="layui-input-block">
+                    <input type="number" name="port" required lay-verify="required" placeholder="请输入端口"
+                        autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">WS Path</label>
+                <div class="layui-input-block">
+                    <input type="text" name="wspath" required lay-verify="required" placeholder="请输入ws path"
+                        autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+
+        </form>
+    </div>
+
+
+</body>
+<script type="text/html" id="editins">
+  <a class="layui-btn layui-btn-xs" lay-event="edit" > 编辑源码 </a>
+<a class="layui-btn layui-btn-xs" lay-event="del"> 删除 </a>
+</script>
+
+<script type="text/html" id="editouts">
+  <a class="layui-btn layui-btn-xs" lay-event="edit" > 编辑源码 </a>
+<a class="layui-btn layui-btn-xs" lay-event="setdef"> 设为默认 </a>
+<a class="layui-btn layui-btn-xs" lay-event="toggleproxy"> 选择代理 </a>
+<a class="layui-btn layui-btn-xs" lay-event="del"> 删除 </a>
+</script>
+
+<script type="text/html" id="editrouts">
+    <a class="layui-btn layui-btn-xs" lay-event="edit" > 编辑源码 </a>
+    <a class="layui-btn layui-btn-xs" lay-event="selectout"> 选择出站 </a>
+    <a class="layui-btn layui-btn-xs" lay-event="del"> 删除 </a>
+</script>
+
+<script id="proxytag" type="text/html">
+<select name="proxytag"  lay-filter="aihao">
+
+    <option value=""></option>
+{%# layui.each(d, function(index, item){ %}
+    <option value="{% item.tag %}"  {%# if( Isequ(SelectProxytag,item.tag) ) {  %}  selected  {%#  } %}     >{% item.tag %}</option>
+{%# }); %}
+</select>
+</script>
+
+<script id="outtag" type="text/html">
+<select name="outtag"  lay-filter="aihao">
+
+    <option value=""></option>
+{%# layui.each(d, function(index, item){ %}
+    <option value="{% item.tag %}"  {%# if( Isequ(SelectOuttag,item.tag) ) {  %}  selected  {%#  } %}     >{% item.tag %}</option>
+{%# }); %}
+</select>
+</script>
+
+
+
+<script src="/layui/common.js"></script>
+<script>
+
+
+</script>
+
+</html>
+{{ end }}
