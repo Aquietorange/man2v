@@ -9,7 +9,10 @@ import (
 	"strings"
 	"time"
 	"v2man/core"
-	"v2man/tool"
+
+	"github.com/hujun528-dev/tool/other/tuuid"
+	"github.com/hujun528-dev/tool/tnum"
+	"github.com/hujun528-dev/tool/tstr"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gogf/gf/encoding/gjson"
@@ -550,12 +553,12 @@ func Createinbound(c *gin.Context) {
         "wsSettings": {}
       }
     }`)
-		uuid := tool.NewUUID()
+		uuid := tuuid.NewUUID()
 		wsvm.Set("port", port)
 		wsvm.Set("listen", ip)
 		wsvm.Set("tag", tag)
 		wsvm.Set("settings.clients.0.id", uuid.String())
-		wsvm.Set("settings.clients.0.alterId", tool.Randint(1, 10))
+		wsvm.Set("settings.clients.0.alterId", tnum.Randint(1, 10))
 		wsvm.Set("streamSettings.wsSettings.path", c.PostForm("wspath"))
 
 		core.V2json.Append("inbounds", wsvm)
@@ -563,6 +566,50 @@ func Createinbound(c *gin.Context) {
 			"succeed": 1,
 		})
 		core.DeferRestartV2()
+	case 1:
+		sock5 := gjson.New(`{
+			"protocol": "socks",
+			"settings": {
+                "auth": "noauth",
+                "udp": true
+            },
+			"sniffing": {
+                "destOverride": [
+                    "http",
+                    "tls"
+                ],
+                "enabled": true
+            }
+		  }`)
+		sock5.Set("port", port)
+		sock5.Set("listen", ip)
+		sock5.Set("tag", tag)
+		core.V2json.Append("inbounds", sock5)
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 1,
+		})
+		core.DeferRestartV2()
+	case 2:
+		distip := c.PostForm("distip")
+		distport := gconv.Int(c.PostForm("distport"))
+		dokodemo := gjson.New(`{
+			"protocol": "dokodemo-door",
+			"settings": {
+                "address": "127.0.0.1",
+                "network": "tcp,udp"
+            }
+		  }`)
+		dokodemo.Set("port", port)
+		dokodemo.Set("listen", ip)
+		dokodemo.Set("tag", tag)
+		dokodemo.Set("settings.address", distip)
+		dokodemo.Set("settings.port", distport)
+		core.V2json.Append("inbounds", dokodemo)
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 1,
+		})
+		core.DeferRestartV2()
+
 	default:
 		c.JSON(http.StatusOK, gin.H{
 			"succeed": 0,
@@ -644,7 +691,7 @@ func AddSubtest() {
 func Apiauth() gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		if tool.Substr(c.Request.URL.Path, 0, 4) == "/api" {
+		if tstr.Substr(c.Request.URL.Path, 0, 4) == "/api" {
 
 			sid, err := c.Cookie("ssid")
 			if err != nil {

@@ -67,7 +67,8 @@ func Run() {
 		r.Run(":18066")
 	}()
 
-	core.RestartV2ray()
+	//core.RestartV2ray()
+	core.Shellstd("journalctl -f -u v2ray.service") //实时读取v2ray服务日志
 	var ch chan int
 	ch <- 1
 }

@@ -18,9 +18,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"v2man/tool"
 
 	"github.com/gogf/gf/encoding/gjson"
+	"github.com/gogf/gf/util/gconv"
+	"github.com/hujun528-dev/tool/container/tqueue"
+	"github.com/hujun528-dev/tool/tfile"
+	"github.com/hujun528-dev/tool/tnum"
+	"github.com/hujun528-dev/tool/tstr"
 )
 
 var Loginfo *log.Logger
@@ -36,7 +40,7 @@ var awaitmark chan int = make(chan int, 1) //v2 config
 var aiaittimerV2man *time.Timer                 //v2man config
 var awaitmarkV2man chan int = make(chan int, 1) //v2man config
 
-var OutLine = tool.NewCircleQueue(100)
+var OutLine = tqueue.NewCircleQueue(100)
 
 var GetProcessByName_win func(name string) (int64, []string)
 
@@ -108,7 +112,6 @@ func Runexe(command string, arg []string) (string, int, error) { //运行的子�
 }
 
 func Shellout(command string) (string, string, error) {
-
 	ShellToUse := ""
 
 	if runtime.GOOS == "windows" {
@@ -212,21 +215,27 @@ func SaveV2manConfig() {
 //重启v2
 func RestartV2ray() {
 
+	if !hasv2() {
+		return
+	}
+
 	Loginfo.Println("开始重启v2ray")
 	pid, file := Getv2config()
 
 	if runtime.GOOS == "linux" {
-		if pid > 0 {
+		/* if pid > 0 {
 			Shellout("kill -9 " + strconv.Itoa(int(pid)))
 		}
 		time.Sleep(1 * time.Second)
-		//	out, pidn, err := Runexe("./v2ray", []string{"-config", file}) //  "nohup ./v2ray -config "+file+" >/dev/null 2>&1 &"
-		go Runexe("./v2ray", []string{"-config", file})
-		/* Loginfo.Println(out)
-		Loginfo.Println(err)
-		if pidn > 0 {
-			V2pid = pidn
-		} */
+		go Runexe("./v2ray", []string{"-config", file}) */
+		Shellout("systemctl restart v2ray")
+		time.Sleep(2 * time.Second)
+		outstr, _, _ := Shellout("systemctl show --property MainPID --value v2ray")
+		fmt.Println(outstr)
+		if outstr != "" {
+			V2pid = gconv.Int(outstr)
+		}
+
 	} else { //windows TODO:存在问题 ，父进程结束后，子进程还在， 启动前需先判断 v2进程 是否已存在，存在则需先结束 ，此类需求的程序 更适合 使用易语言开发
 		if pid > 0 {
 			Shellout("taskkill /f /pid " + strconv.Itoa(int(pid)) + " -t ")
@@ -327,11 +336,11 @@ func Savenodelist(nodes, remark string) {
 	for {
 		line, errl := reader.ReadString('\n')
 		if len(line) > 0 {
-			protocol := tool.Substr(line, 0, strings.Index(line, "://"))
+			protocol := tstr.Substr(line, 0, strings.Index(line, "://"))
 			if strings.TrimSpace(protocol) == "" {
 				continue
 			}
-			s, err := base64.StdEncoding.DecodeString(tool.Substr(line, strings.LastIndex(line, "://")+3, -1))
+			s, err := base64.StdEncoding.DecodeString(tstr.Substr(line, strings.LastIndex(line, "://")+3, -1))
 			if err == nil {
 				j, err := gjson.LoadContent(string(s))
 				if err == nil {
@@ -390,7 +399,7 @@ func CloneNode(sub, add string, port int64) {
 		d_port := V2manJson.GetInt64("nodelist." + sub + "." + strconv.Itoa(i) + ".port")
 		if add == d_add && port == d_port {
 			nodej := V2manJson.Get("nodelist." + sub + "." + strconv.Itoa(i))
-			V2manJson.Append("nodelist."+"Clone"+strconv.Itoa(int(tool.Randint(1111, 9999))), nodej)
+			V2manJson.Append("nodelist."+"Clone"+strconv.Itoa(int(tnum.Randint(1111, 9999))), nodej)
 			break
 		}
 	}
@@ -432,7 +441,7 @@ func SetActivity(sub, add string, port int64) {
 				protocol := V2json.GetString("outbounds.0.protocol")
 
 				if V2json.Contains("outbounds.0.proxySettings") || protocol == "freedom" || protocol == "blackhole" {
-					vnode := SubnodeTov2node(nodej.(map[string]interface{}), sub+strconv.Itoa(int(tool.Randint(1111, 9999))))
+					vnode := SubnodeTov2node(nodej.(map[string]interface{}), sub+strconv.Itoa(int(tnum.Randint(1111, 9999))))
 
 					v0 := V2json.Get("outbounds.0") //移到尾部
 
@@ -441,11 +450,11 @@ func SetActivity(sub, add string, port int64) {
 					V2json.Append("outbounds", v0)
 
 				} else {
-					vnode := SubnodeTov2node(nodej.(map[string]interface{}), sub+strconv.Itoa(int(tool.Randint(1111, 9999))))
+					vnode := SubnodeTov2node(nodej.(map[string]interface{}), sub+strconv.Itoa(int(tnum.Randint(1111, 9999))))
 					V2json.Set("outbounds.0", vnode)
 				}
 			} else {
-				vnode := SubnodeTov2node(nodej.(map[string]interface{}), sub+strconv.Itoa(int(tool.Randint(1111, 9999))))
+				vnode := SubnodeTov2node(nodej.(map[string]interface{}), sub+strconv.Itoa(int(tnum.Randint(1111, 9999))))
 				V2json.Set("outbounds.0", vnode)
 			}
 			DeferRestartV2()
@@ -522,15 +531,68 @@ func Getauthmd5() string {
 	return md5a
 }
 
+func hasv2() bool {
+
+	//pathrun, _ := tfile.GetCurrentDirectory()
+	runname := ""
+	if runtime.GOOS == "linux" {
+		//runname = "v2ray"
+		return true
+	} else {
+		runname = "v2ray.exe"
+	}
+
+	if !tfile.PathExists(runname) { //v2man 配置文件不存在
+		return false
+	} else {
+		return true
+	}
+
+}
+
 func init() {
 	var err error
-	V2manJson, err = gjson.Load("v2man.json")
 
-	if err == nil {
-		DefaultV2Config = V2manJson.GetString("v2config")
+	pathrun, err := tfile.GetCurrentDirectory()
+	if err != nil {
+		os.Exit(0)
+	}
+
+	if !tfile.PathExists(pathrun + "/v2man.json") { //v2man 配置文件不存在
+		V2manJson, _ = gjson.LoadContent(`{"v2config": "/etc/v2ray/config.json",
+			"user": "root",
+			"pass": "ab123456"}`)
+		SaveV2manConfig()
+	} else {
+		V2manJson, err = gjson.Load("v2man.json")
+		if err != nil {
+			fmt.Println(err)
+		}
+	}
+	DefaultV2Config = V2manJson.GetString("v2config")
+
+	if !tfile.PathExists(DefaultV2Config) { //v2config 配置文件不存在
+		fmt.Println(DefaultV2Config)
+		fmt.Println("v2配置文件不存在")
+		//os.Exit(0)
+	} else {
 		V2json, _ = gjson.Load(DefaultV2Config)
+
+		needrestart := false
+		if V2json.GetString("log.access") != "" {
+			V2json.Set("log.access", "")
+			needrestart = true
+		}
+		if V2json.GetString("log.error") != "" {
+			V2json.Set("log.error", "")
+			needrestart = true
+		}
+		if needrestart {
+			ioutil.WriteFile(DefaultV2Config, V2json.MustToJson(), 07555)
+			fmt.Println("-----1")
+			go RestartV2ray()
+		}
 		fmt.Println(DefaultV2Config)
 		fmt.Println(len(V2json.GetArray("inbounds")))
 	}
-
 }

@@ -94,7 +94,8 @@
                     <div class="layui-colla-content layui-show">
 
                         <a class="layui-btn layui-btn-xs" onclick="Createinbound(0)"> 创建一个ws+vmess入站 </a>
-
+                        <a class="layui-btn layui-btn-xs" onclick="Createinbound(1)"> 创建一个socks5入站 </a>
+                        <a class="layui-btn layui-btn-xs" onclick="Createinbound(2)"> 创建一个透明代理 </a>
                         <table class="layui-table" id="inbounds" lay-filter="inbounds">
                         </table>
 
@@ -224,7 +225,23 @@
             <div class="layui-form-item">
                 <label class="layui-form-label">WS Path</label>
                 <div class="layui-input-block">
-                    <input type="text" name="wspath" required lay-verify="required" placeholder="请输入ws path"
+                    <input type="text" name="wspath" required lay-verify="required" placeholder="请输入ws path(ws模式下有效)"
+                        autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">目标地址</label>
+                <div class="layui-input-block">
+                    <input type="text" name="distip" required lay-verify="required" placeholder="请输入目标地址ip(透明代理模式有效)"
+                        autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">目标端口</label>
+                <div class="layui-input-block">
+                    <input type="text" name="distport" required lay-verify="required" placeholder="请输入目标端口(透明代理模式有效)"
                         autocomplete="off" class="layui-input">
                 </div>
             </div>
