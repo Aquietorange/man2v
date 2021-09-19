@@ -854,6 +854,9 @@ function Createinbound(type) {
         case 2:
             Title = "创建透明代理"
             break
+        case 3:
+            Title = "创建HTTP代理"
+            break
     }
     var index = layer.open({
         type: 1,
@@ -875,6 +878,40 @@ function Createinbound(type) {
         area: ['700px', '500px'], //宽高
         end: function () {//销毁时的回调函数
             $("#Createinbound").css({ "display": "none" })
+            //关闭时将选择插入的dom结构结构display设置为none
+        }
+    });
+
+}
+
+function Createoutbound(type){
+       let Title = ""
+    console.log(type)
+    switch (type) {
+        case 0:
+            Title = "导入出站从二维码内容"
+            break
+    }
+    var index = layer.open({
+        type: 1,
+        title: Title + ";请输入", //不显示标题
+        content: $("#Createoutbound"),
+        closeBtn: 0,
+        btn: ['创建', '取消'],
+        yes: function (index, layero) {
+            var data = layui.form.val("Createoutbound");
+            layer.close(index);
+            $.post("/api/Createoutbound", { ...data, type }, (datav) => {
+                if (datav.succeed) {
+                    layer.msg("创建成功");
+                    location.reload()
+                }
+            })
+        },
+        skin: "layui-layer-lan",
+        area: ['700px', '500px'], //宽高
+        end: function () {//销毁时的回调函数
+            $("#Createoutbound").css({ "display": "none" })
             //关闭时将选择插入的dom结构结构display设置为none
         }
     });

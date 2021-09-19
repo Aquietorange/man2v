@@ -95,6 +95,7 @@
 
                         <a class="layui-btn layui-btn-xs" onclick="Createinbound(0)"> 创建一个ws+vmess入站 </a>
                         <a class="layui-btn layui-btn-xs" onclick="Createinbound(1)"> 创建一个socks5入站 </a>
+                        <a class="layui-btn layui-btn-xs" onclick="Createinbound(3)"> 创建一个HTTP入站 </a>
                         <a class="layui-btn layui-btn-xs" onclick="Createinbound(2)"> 创建一个透明代理 </a>
                         <table class="layui-table" id="inbounds" lay-filter="inbounds">
                         </table>
@@ -104,6 +105,7 @@
                 <div class="layui-colla-item">
                     <h2 class="layui-colla-title">出站</h2>
                     <div class="layui-colla-content layui-show">
+                        <a class="layui-btn layui-btn-xs" onclick="Createoutbound(0)"> 从二维码内容导入一个出站</a>
                         <table class="layui-table" id="outbounds" lay-filter="outbounds">
                         </table>
                     </div>
@@ -247,6 +249,30 @@
             </div>
 
 
+        </form>
+    </div>
+
+    <div id="Createoutbound" style="display: none;    height: 100%">
+        <form class="layui-form" style="    height: 100%" onsubmit=" return false" lay-filter="Createoutbound">
+
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">入站Tag</label>
+                <div class="layui-input-block">
+                    <input type="text" name="tag" required lay-verify="required" placeholder="请输入Tag" autocomplete="off"
+                        class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">出站bash64内容</label>
+                <div class="layui-input-block">
+                    <textarea placeholder="格式:vmess:// ，一行一条" name="outnode" class="layui-textarea"
+                    style="height: 100%;"></textarea>
+                </div>
+            </div>
+
+           
         </form>
     </div>
 

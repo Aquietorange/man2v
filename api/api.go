@@ -2,6 +2,7 @@ package api
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
@@ -523,6 +524,46 @@ func CreateIpRou(c *gin.Context) {
 	core.DeferRestartV2()
 }
 
+//根据type 导入 入站
+func Createoutbound(c *gin.Context) {
+
+	var Type = gconv.Int(c.PostForm("type"))
+	var Tag = c.PostForm("tag")
+
+	switch Type {
+
+	case 0:
+		outnode := c.PostForm("outnode")
+
+		if len(outnode) > 0 {
+			protocol := tstr.Substr(outnode, 0, strings.Index(outnode, "://"))
+			if strings.TrimSpace(protocol) == "" {
+				c.JSON(http.StatusOK, gin.H{
+					"succeed": 0,
+				})
+				return
+			}
+			s, err := base64.StdEncoding.DecodeString(tstr.Substr(outnode, strings.LastIndex(outnode, "://")+3, -1))
+			if err == nil {
+				j, err := gjson.LoadContent(string(s))
+				if err == nil {
+					j.Set("protocol", protocol)
+					j.Set("port", j.GetFloat64("port"))
+					nodej := j.GetMap(".")
+					core.V2json.Append("outbounds", core.SubnodeTov2node(nodej, Tag))
+				}
+			}
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 1,
+		})
+
+		core.DeferRestartV2()
+	}
+
+}
+
 //根据type 创建一个入站
 func Createinbound(c *gin.Context) {
 	var Type = gconv.Int(c.PostForm("type"))
@@ -608,6 +649,32 @@ func Createinbound(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"succeed": 1,
 		})
+		core.DeferRestartV2()
+	case 3:
+
+		http := gjson.New(`{
+		"protocol": "http",
+		"settings": {
+			"timeout": 500
+		},
+		"sniffing": {
+			"destOverride": [
+				"http",
+				"tls"
+			],
+			"enabled": true
+		}
+	  }`)
+
+		http.Set("port", port)
+		http.Set("listen", ip)
+		http.Set("tag", tag)
+		core.V2json.Append("inbounds", http)
+
+		c.JSON(200, gin.H{
+			"succeed": 1,
+		})
+
 		core.DeferRestartV2()
 
 	default:

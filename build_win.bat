@@ -1,4 +1,1 @@
-SET CGO_ENABLED=0
-SET GOOS=linux
-SET GOARCH=amd64
-go build -o ./v2man -ldflags "-s -w" main.go 
+go build -o ./v2man.exe -ldflags "-s -w" main.go 

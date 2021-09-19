@@ -49,6 +49,7 @@ func Run() {
 			r.POST("/api/CreateDomainRou", api.CreateDomainRou)
 			r.POST("/api/CreateIpRou", api.CreateIpRou)
 			r.POST("/api/Createinbound", api.Createinbound)
+			r.POST("/api/Createoutbound", api.Createoutbound)
 
 			r.POST("/api/readsub", api.ReadSub)
 			r.GET("/api/getnodelist", api.GetNodeList)

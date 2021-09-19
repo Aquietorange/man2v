@@ -461,9 +461,15 @@ echo "The sum of two numbers is $ret !"
 # systemctl list-units  列出当前已经启动的 unit，如果添加 -all 选项会同时列出没有启动的 unit。
 # systemctl list-units | grep 'v2man' | awk -F ' ' '{print $1}'  查找当前是否存在v2man 服务
 # systemctl show --property MainPID --value v2ray   // property 指定只显示 服务的特定属性，--value 指定只显示 属性值
+#systemctl mask unit  注销 unit，注销后你就无法启动这个 unit 了。
+#systemctl unmask unit   取消对 unit 的注销。
+#systemctl disable unit   禁用服务 设置下次开机时 ，后面接的 unit 不会被启动。
+
 
 # journalctl -u unitxxx.service   //输出此服务的日志
 # journalctl   -f -u v2xxx.service  //实时输出指定服务日志
+
+
 
 #echo $(systemctl list-units | grep 'v2man' | awk -F ' ' '{print $1}')
 #注意：当我们使用systemctl的start，restart，stop和reload命令时，终端不会输出任何内容，只有status命令可以打印输出。
@@ -586,6 +592,7 @@ echo "The sum of two numbers is $ret !"
 # sed  '/PWD/d'                  /将当前目录下1.txt 文件中 所有 包含 PWD 的行 删除后，输出显示，此操作 不改变文件内容
 # sed '/^$/d' file              删除空白行：
 # sed '2d' fil                  删除文件的第2行：
+# sed -i '/cdrom/d' fil e                 所有含cdrom的行：
 # sed '$d' file                 删除文件最后一行
 # sed '/^test/'d file           删除文件中所有开头是test的行：
 # sed -i "/acme.sh/c 0 3 * * 0 bash abcdef" ./1.txt    用0 3 * * 0 bash abcdef 替换acme.sh所在行
@@ -690,3 +697,49 @@ echo "The sum of two numbers is $ret !"
 # tar -tzvf test.tar.gz 
 #解压 文件 到 指定目录, 指定目录 需要 是已存在的
 #tar -zxvf nginx-"$nginx_version".tar.gz -c /home/test
+
+
+#docker rmi $(docker images | grep none | awk '{print $3}')
+
+#设置系统代理
+#export HTTP_PROXY="http://127.0.0.1:10708/"
+#export HTTPS_PROXY="http://127.0.0.1:10708/"
+#export FTP_PROXY="http://127.0.0.1:10708/"
+#export NO_PROXY="127.0.0.1,localhost"
+
+
+#创建Swap交换文件 虚拟内存
+#在这个例子中，我们将创建并激活1G的Swap，要创建更大的Swap，请将1G替换为所需Swap空间的大小。
+#以下步骤操作如何在Debian 10上添加Swap交换空间。
+#
+#1、首先创建一个用于Swap的文件：
+#fallocate -l 1G /swapfile
+#
+#如果未安装fallocate或者你收到错误消息，指出fallocate失败：操作不受支持（fallocate failed: Operation not supported），你可以使用以下命令创建交换文件：
+#dd if=/dev/zero of=/swapfile bs=1024 count=1048576
+#
+#2、只有root用户才能读取和写入交换文件，输入以下命令以设置正确的权限：
+# chmod 600 /swapfile
+#
+#3、使用mkswap工具在文件上设置Linux Swap区域：
+# mkswap /swapfile
+#
+#4、激活Swap文件：
+#swapon /swapfile
+#
+#要使更改永久，打开/etc/fstab文件：
+#nano /etc/fstab
+#
+#并粘贴以下行：
+#/swapfile swap swap defaults 0 0
+#
+#5、使用swapon或free命令验证Swap是否处于活动状态，如下所示：
+#sudo swapon --show
+
+
+#tail 
+#命令可用于查看文件的指定行数或长度内容
+#tail notes.log           默认显示最后 10 行
+#tail -f notes.log        跟踪名为 notes.log 的文件的增长情况
+#tail -n +20 notes.log    从第 20 行至文件末尾:
+#tail -c 10 notes.log     显示文件 notes.log 的最后 10 个字符:

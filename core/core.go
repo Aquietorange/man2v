@@ -219,7 +219,7 @@ func RestartV2ray() {
 		return
 	}
 
-	Loginfo.Println("开始重启v2ray")
+	//Loginfo.Println("开始重启v2ray")
 	pid, file := Getv2config()
 
 	if runtime.GOOS == "linux" {
@@ -478,11 +478,11 @@ func SubnodeTov2node(node map[string]interface{}, sub string) *gjson.Json {
 		j.Set("settings.servers.0.users.0.pass", node["pass"])
 	case "vmess":
 		j.Set("settings.vnext.0.address", node["add"])
-		j.Set("settings.vnext.0.port", node["port"])
+		j.Set("settings.vnext.0.port", gconv.Int64(node["port"]))
 
 		//aid, _ := strconv.ParseInt(node["aid"].(string), 10, 64)
 		if node["aid"] != nil {
-			j.Set("settings.vnext.0.users.0.alterId", node["aid"])
+			j.Set("settings.vnext.0.users.0.alterId", gconv.Int64(node["aid"]))
 		}
 		j.Set("settings.vnext.0.users.0.email", "t@t.tt")
 		j.Set("settings.vnext.0.users.0.id", node["id"])
@@ -516,9 +516,14 @@ func SubnodeTov2node(node map[string]interface{}, sub string) *gjson.Json {
 
 			if node["tls"].(string) != "" {
 				j.Set("streamSettings.security", node["tls"])
+				/* 	 "tlsSettings": {// 跳过证书验证
+				  "allowInsecure": true,
+				  "serverName": "335e8d1495c5cc9e2b3979186593c720.v.smtcdns.net"
+				}, */
+				j.Set("streamSettings.tlsSettings.allowInsecure", true)
+				j.Set("streamSettings.tlsSettings.serverName", node["host"])
 			}
 		}
-
 	}
 	return j
 }
@@ -570,6 +575,9 @@ func init() {
 		}
 	}
 	DefaultV2Config = V2manJson.GetString("v2config")
+	if runtime.GOOS != "linux" {
+		DefaultV2Config = "config.json"
+	}
 
 	if !tfile.PathExists(DefaultV2Config) { //v2config 配置文件不存在
 		fmt.Println(DefaultV2Config)
@@ -587,12 +595,33 @@ func init() {
 			V2json.Set("log.error", "")
 			needrestart = true
 		}
-		if needrestart {
-			ioutil.WriteFile(DefaultV2Config, V2json.MustToJson(), 07555)
-			fmt.Println("-----1")
-			go RestartV2ray()
+
+		if runtime.GOOS == "windows" { //需先 等待 core_windows.go 初始化完成 ，因此 要在线程 中执行
+
+			go func() {
+				time.Sleep(5 * time.Second)
+				pid, _ := Getv2config()
+				if pid == 0 {
+					needrestart = true
+				}
+				if needrestart {
+					RestartV2ray()
+				}
+			}()
+
+		} else {
+			pid, _ := Getv2config()
+			if pid == 0 {
+				needrestart = true
+			}
+
+			if needrestart {
+				ioutil.WriteFile(DefaultV2Config, V2json.MustToJson(), 07555)
+				go RestartV2ray()
+			}
+			fmt.Println(DefaultV2Config)
+			fmt.Println(len(V2json.GetArray("inbounds")))
+
 		}
-		fmt.Println(DefaultV2Config)
-		fmt.Println(len(V2json.GetArray("inbounds")))
 	}
 }
