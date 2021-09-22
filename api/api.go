@@ -5,20 +5,35 @@ import (
 	"encoding/base64"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
 	"v2man/core"
 
-	"github.com/hujun528-dev/tool/other/tuuid"
-	"github.com/hujun528-dev/tool/tnum"
-	"github.com/hujun528-dev/tool/tstr"
+	"github.com/Aquietorange/tool/other/thex"
+	"github.com/Aquietorange/tool/other/tuuid"
+	"github.com/Aquietorange/tool/tfile"
+	"github.com/Aquietorange/tool/tnum"
+	"github.com/Aquietorange/tool/tstr"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gogf/gf/encoding/gjson"
 	"github.com/gogf/gf/util/gconv"
 )
+
+var postfuns = map[string]interface{}{
+	"NetPenetrate_startclient": func(postdata map[string]interface{}) {
+		fmt.Println(postdata)
+		if !core.Plugs.IsInstalled("NetPenetrate") {
+			core.Plugs.Install("NetPenetrate")
+		}
+
+	},
+}
 
 func Apigetv2config(c *gin.Context) {
 	pid, file := core.Getv2config()
@@ -43,10 +58,14 @@ func Apigetv2config(c *gin.Context) {
 	   		})
 	   		return
 	   	} */
-
+	ngxpid := ""
+	if runtime.GOOS == "linux" {
+		ngxpid, _, _ = core.Shellout("pidof nginx")
+	}
 	c.JSON(http.StatusOK, gin.H{
 		"succeed":   1,
 		"pid":       pid,
+		"nginxpid":  ngxpid,
 		"confile":   file,
 		"v2config":  core.V2json,
 		"manconfig": core.V2manJson,
@@ -270,15 +289,49 @@ func Changeconfig(c *gin.Context) {
 				"message": "源码格式错误",
 			})
 		}
+	case "20": //修改nginx v2ray.conf
+		if runtime.GOOS == "linux" {
+
+			var pathconf = ""
+			if tfile.PathExists("/etc/nginx/conf.d/v2ray.conf") {
+				pathconf = "/etc/nginx/conf.d/v2ray.conf"
+			} else if tfile.PathExists("/etc/nginx/conf.d/v2ray_cf.conf") {
+				pathconf = "/etc/nginx/conf.d/v2ray_cf.conf"
+			}
+
+			ioutil.WriteFile(pathconf, []byte(c.PostForm("value")), 0666)
+			c.JSON(http.StatusOK, gin.H{
+				"succeed": 1,
+			})
+			core.Shellout("service nginx restart")
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"succeed": 0,
+			})
+		}
 	}
 }
 
 func Admin(c *gin.Context) {
-	c.HTML(http.StatusOK, "index", gin.H{"pathindex": "1"})
+	page := c.Params.ByName("page")
+	page = strings.Replace(page, "/", "", -1)
+
+	if page == "" {
+		page = "index"
+	}
+	c.HTML(http.StatusOK, page, gin.H{"path" + page: "1"})
+
+	//r.GET("/admin", api.Admin)
+	//r.GET("/admin/nodelist", api.NodeList)
+	//r.GET("/admin/other", api.Other)
+
 }
 
 func NodeList(c *gin.Context) {
 	c.HTML(http.StatusOK, "nodelist", gin.H{"pathnodelist": "1"})
+}
+func Other(c *gin.Context) {
+	c.HTML(http.StatusOK, "other", gin.H{"pathother": "1"})
 }
 
 func AddSub(c *gin.Context) {
@@ -456,7 +509,38 @@ func SelectOut(c *gin.Context) {
 		})
 	} else {
 
-		core.V2json.Set("routing.rules."+c.PostForm("id")+".outboundTag", c.PostForm("outtag"))
+		Type := c.PostForm("type")
+		if Type == "ins" { //入站 绑定 指定 出站
+			Tag := c.PostForm("tag")
+
+			ii := core.Findrouteouttag(c.PostForm("outtag"))
+			if ii == -1 {
+				outrou := gjson.New(`{
+		"inboundTag": [],
+		 "outboundTag": "direct",
+        "type": "field"
+	}`)
+				outrou.Set("inboundTag.0", Tag)
+				outrou.Set("outboundTag", c.PostForm("outtag"))
+				core.V2json.Append("routing.rules", outrou)
+			} else {
+				isfind := false
+				for _, intagv := range core.V2json.GetArray("routing.rules." + gconv.String(ii) + ".inboundTag") {
+					if intagv == Tag {
+						isfind = true
+						break
+					}
+				}
+				if !isfind {
+					core.V2json.Append("routing.rules."+gconv.String(ii)+".inboundTag", Tag)
+				}
+
+			}
+
+		} else {
+			core.V2json.Set("routing.rules."+c.PostForm("id")+".outboundTag", c.PostForm("outtag"))
+		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"succeed": 1,
 		})
@@ -522,6 +606,95 @@ func CreateIpRou(c *gin.Context) {
 		"succeed": 1,
 	})
 	core.DeferRestartV2()
+}
+
+//api 增删改查
+func Post(c *gin.Context) {
+	var postdata map[string]interface{}
+
+	err := c.ShouldBind(&postdata)
+
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 0,
+			"message": "参数错误",
+		})
+		return
+	}
+	fmt.Println(postdata)
+	Type := postdata["type"].(string)
+
+	fun, ok := postfuns[Type]
+	if ok {
+		CallFuncs(fun, postdata)
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 0,
+			"message": "参数错误...",
+		})
+	}
+}
+
+//获取一个入站的二维码
+func Createshareqr(c *gin.Context) {
+	var Tag = c.PostForm("tag")
+	var Ip = c.PostForm("ip")
+	index := core.Findinbounds(Tag, 0)
+
+	if index == -1 || core.V2json.GetString("inbounds."+gconv.String(index)+".protocol") != "vmess" {
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 0,
+			"message": "参数错误",
+		})
+	} else { //vmess 协议
+		usetls := false
+		if Ip == "0.0.0.0" && runtime.GOOS == "linux" { //取本机ip
+			Ip, _, _ = core.Shellout(`ifconfig -a|grep inet|grep -v 127.0.0.1|grep -v inet6|awk '{print $2}'|tr -d "addr:"`)
+		}
+		nettype := core.V2json.GetString("inbounds." + gconv.String(index) + ".streamSettings.network")
+		if nettype == "" {
+			nettype = "tcp"
+		}
+		if nettype != "tcp" {
+			usetls = true
+		}
+		qrjs := gjson.New(`{
+  "v": "2",
+  "ps": "local_test",
+  "add": "127.0.0.1",
+  "port": "4443",
+  "id": "a684455c-b14f-11ea-bf0d-42010aaa0003",
+  "aid": "4",
+  "net": "tcp",
+  "type": "none",
+  "host": "",
+  "path": "",
+  "tls": ""
+}`)
+
+		qrjs.Set("ps", Tag)
+		qrjs.Set("add", Ip)
+		qrjs.Set("port", core.V2json.GetInt64("inbounds."+gconv.String(index)+".port"))
+		qrjs.Set("id", core.V2json.GetString("inbounds."+gconv.String(index)+".settings.clients.0.id"))
+		qrjs.Set("aid", core.V2json.GetInt64("inbounds."+gconv.String(index)+".settings.clients.0.alterId"))
+		qrjs.Set("net", nettype) //TODO:BUG
+		if strings.Count(Ip, ".") != 4 {
+			qrjs.Set("host", Ip)
+		}
+		if nettype == "ws" {
+			qrjs.Set("path", core.V2json.GetString("inbounds."+gconv.String(index)+".streamSettings.wsSettings.path"))
+		}
+		if usetls {
+			qrjs.Set("tls", "tls")
+		}
+		qrstr := qrjs.GetString(".")
+
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 1,
+			"qrstr":   "vmess://" + thex.EncodeBase64(qrstr),
+		})
+
+	}
 }
 
 //根据type 导入 入站
@@ -607,7 +780,7 @@ func Createinbound(c *gin.Context) {
 			"succeed": 1,
 		})
 		core.DeferRestartV2()
-	case 1:
+	case 1: //socks5
 		sock5 := gjson.New(`{
 			"protocol": "socks",
 			"settings": {
@@ -630,7 +803,7 @@ func Createinbound(c *gin.Context) {
 			"succeed": 1,
 		})
 		core.DeferRestartV2()
-	case 2:
+	case 2: //透明转发
 		distip := c.PostForm("distip")
 		distport := gconv.Int(c.PostForm("distport"))
 		dokodemo := gjson.New(`{
@@ -650,7 +823,7 @@ func Createinbound(c *gin.Context) {
 			"succeed": 1,
 		})
 		core.DeferRestartV2()
-	case 3:
+	case 3: //http
 
 		http := gjson.New(`{
 		"protocol": "http",
@@ -675,6 +848,24 @@ func Createinbound(c *gin.Context) {
 			"succeed": 1,
 		})
 
+		core.DeferRestartV2()
+	case 4: //vmess
+		vmess := gjson.New(`{
+      "protocol": "vmess",
+      "settings": {
+        "clients": []
+      }
+     }`)
+		uuid := tuuid.NewUUID()
+		vmess.Set("port", port)
+		vmess.Set("listen", ip)
+		vmess.Set("tag", tag)
+		vmess.Set("settings.clients.0.id", uuid.String())
+		vmess.Set("settings.clients.0.alterId", tnum.Randint(1, 10))
+		core.V2json.Append("inbounds", vmess)
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 1,
+		})
 		core.DeferRestartV2()
 
 	default:
@@ -783,4 +974,62 @@ func Apiauth() gin.HandlerFunc {
 
 		}
 	}
+}
+
+func Getconfig(c *gin.Context) {
+	Type := c.Query("type")
+	switch Type {
+	case "nginx":
+		if runtime.GOOS == "linux" {
+			var conf = []byte{}
+			if tfile.PathExists("/etc/nginx/conf.d/v2ray.conf") {
+				conf, _ = ioutil.ReadFile("/etc/nginx/conf.d/v2ray.conf")
+			} else if tfile.PathExists("/etc/nginx/conf.d/v2ray_cf.conf") {
+				conf, _ = ioutil.ReadFile("/etc/nginx/conf.d/v2ray_cf.conf")
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"succeed": 1,
+				"content": string(conf),
+			})
+		} else {
+			c.JSON(http.StatusOK, gin.H{
+				"succeed": 0,
+				"message": "暂只支持linux系统",
+			})
+		}
+
+	default:
+
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 0,
+			"message": "参数错误",
+		})
+
+	}
+
+}
+
+func CallFuncs(fc interface{}, params ...interface{}) (result interface{}, err error) {
+	f := reflect.ValueOf(fc)
+	if f.Kind() != reflect.Func {
+		err = fmt.Errorf("param fc is not avaliablel, must be func")
+		return
+	}
+	if len(params) != f.Type().NumIn() {
+		err = fmt.Errorf("the number of params is not adapted")
+		return
+	}
+
+	in := make([]reflect.Value, len(params))
+	for k, param := range params {
+		in[k] = reflect.ValueOf(param)
+	}
+	resp := f.Call(in)
+	if len(resp) > 0 {
+		result = reflect.ValueOf(resp[0].Interface()).Interface()
+		return
+	}
+	result = nil
+	return
 }

@@ -28,10 +28,10 @@ github.com/google/go-cmp v0.5.6/go.mod h1:v8dTdLbMG2kIc/vJvl+f65V22dbkXbowE6jgT/
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/grokify/html-strip-tags-go v0.0.0-20190921062105-daaa06bf1aaf/go.mod h1:2Su6romC5/1VXOQMaWL2yb618ARB8iVo6/DR99A6d78=
-github.com/hujun528-dev/tool v0.0.0-20210907044134-25c2b2181e3a h1:7rmD0vT1zvhhRhW939YlN+MFDxS+d2y1OLS7mI9Ma6g=
-github.com/hujun528-dev/tool v0.0.0-20210907044134-25c2b2181e3a/go.mod h1:GIB1P0s1CjSNW6FU8KZ6KaMlH+1rfMOSHxC6Lv65LxM=
-github.com/hujun528-dev/tool v0.0.0-20210907055856-b4ff7499df8f h1:V9pGMJO23d8Zjm3XsBXsaOoMI+ejZW35RmVZPgagfaQ=
-github.com/hujun528-dev/tool v0.0.0-20210907055856-b4ff7499df8f/go.mod h1:GIB1P0s1CjSNW6FU8KZ6KaMlH+1rfMOSHxC6Lv65LxM=
+github.com/Aquietorange/tool v0.0.0-20210907044134-25c2b2181e3a h1:7rmD0vT1zvhhRhW939YlN+MFDxS+d2y1OLS7mI9Ma6g=
+github.com/Aquietorange/tool v0.0.0-20210907044134-25c2b2181e3a/go.mod h1:GIB1P0s1CjSNW6FU8KZ6KaMlH+1rfMOSHxC6Lv65LxM=
+github.com/Aquietorange/tool v0.0.0-20210907055856-b4ff7499df8f h1:V9pGMJO23d8Zjm3XsBXsaOoMI+ejZW35RmVZPgagfaQ=
+github.com/Aquietorange/tool v0.0.0-20210907055856-b4ff7499df8f/go.mod h1:GIB1P0s1CjSNW6FU8KZ6KaMlH+1rfMOSHxC6Lv65LxM=
 github.com/json-iterator/go v1.1.9 h1:9yzud/Ht36ygwatGx56VwCZtlI/2AD15T1X2sjSuGns=
 github.com/json-iterator/go v1.1.9/go.mod h1:KdQUCv79m/52Kvf8AW2vK1V8akMuk1QjK/uOdHXbAo4=
 github.com/kardianos/service v1.2.0 h1:bGuZ/epo3vrt8IPC7mnKQolqFeYJb7Cs8Rk4PSOBB/g=

@@ -50,8 +50,9 @@ $.get("/api/config", (data) => {
         v2man.v2config = data.v2config
         v2man.manconfig = data.manconfig
         v2man.pid = data.pid
+        v2man.ngxpid = data.nginxpid
         v2man.confile = data.confile
-        if (location.pathname == "/admin") {
+        if (location.pathname == "/admin/") {
             renderins()
             renderouts()
             renderrouting()
@@ -67,7 +68,7 @@ $.get("/api/config", (data) => {
 })
 
 
-function renderlogin() {
+function renderlogin () {
     var index = layer.open({
         type: 1,
         title: "需要登录",
@@ -96,7 +97,7 @@ function renderlogin() {
         }
     });
 }
-function signout() {
+function signout () {
 
     $.get("/signout", (data) => {
 
@@ -106,17 +107,18 @@ function signout() {
     })
 }
 
-function refreshv2html() {
+function refreshv2html () {
     $("#v2config").html(v2man.confile)
     $("#v2pid").html(v2man.pid)
+    $("#nginxpid").html(v2man.ngxpid)
 }
 
-function refreshlogs() {
+function refreshlogs () {
     getlogs()
     setInterval(getlogs, 2000)
 }
 
-function getlogs() {
+function getlogs () {
     $.get("/api/getlogs?id=" + lastlogid, (data) => {
         if (data.succeed) {
             if (data.logs && data.logs.length) {
@@ -127,7 +129,7 @@ function getlogs() {
     })
 }
 
-function renderlogs(logs) {
+function renderlogs (logs) {
 
     for (let index = 0; index < logs.length; index++) {
         const element = logs[index];
@@ -138,7 +140,7 @@ function renderlogs(logs) {
 
 
 //动态渲染 前置代理 切换 下拉项
-function rendersoption(transportLayer) {
+function rendersoption (transportLayer) {
     laytpl.config({//自定义模板分割符 防止和后端冲突
         open: '{%',
         close: '%}'
@@ -166,7 +168,7 @@ function rendersoption(transportLayer) {
 }
 
 //动态渲染 路由 切换 出口 下拉项
-function rendersOutOption(transportLayer) {
+function rendersOutOption (transportLayer) {
     laytpl.config({//自定义模板分割符 防止和后端冲突
         open: '{%',
         close: '%}'
@@ -186,7 +188,7 @@ function rendersOutOption(transportLayer) {
 }
 
 
-function loadoutstable() {
+function loadoutstable () {
     var table = layui.table;
 
     var outs = deepClone(v2man.v2config.outbounds)
@@ -253,7 +255,7 @@ function loadoutstable() {
 
 }
 
-function renderouts() {//TODO: 先完成 订阅导入
+function renderouts () {//TODO: 先完成 订阅导入
     loadoutstable()
     var table = layui.table;
 
@@ -409,7 +411,7 @@ function renderouts() {//TODO: 先完成 订阅导入
     });
 }
 
-function renderins() {
+function renderins () {
     var table = layui.table
         , util = layui.util;
 
@@ -513,14 +515,79 @@ function renderins() {
             });
         } else if (layEvent === 'LAYTABLE_TIPS') {
             layer.alert('Hi，头部工具栏扩展的右侧图标。');
+        } else if (layEvent === 'share') {
+            if (data.protocol != "vmess") {
+                layer.msg("暂只能分享vmess协议")
+            } else {
+
+                layer.prompt({
+                    value: '0.0.0.0',
+                    title: '请输入当前节点使用的IP或域名，默认为当前节点公网IP',
+                    area: ['300px', '150px'] //自定义文本域宽高
+                }, async function (ip, index, elem) {
+                    //alert(value); //得到value
+                    layer.close(index);
+                    createshareqr(data, ip)
+                });
+            }
+        } else if (layEvent == "insselectout") {
+
+            /*   if (data.outboundTag) {//当前行 出口tag
+                  SelectOuttag = data.outboundTag
+              } else {
+                  SelectOuttag = ""
+              } */
+
+            rendersOutOption()
+
+            var index = layer.open({
+                type: 1,
+                title: "选择出站Tag",
+                content: $('#selectout'), //捕获的元素，注意：最好该指定的元素要存放在body最外层，否则可能被其它的相对元素所影响
+                btn: ['保存', '取消'],
+                closeBtn: false,
+                area: ['500px', '300px'], //宽高
+                yes: function (index, layero) {
+                    //do something
+                    console.log("yes")
+                    layer.close(index); //如果设定了yes回调，需进行手工关闭
+                    layer.closeAll()
+
+                    let formdata = layui.form.val("selectout");
+                    $.post("/api/selectout", { ...formdata, type: "ins", tag: data.tag }, (data) => {
+                        if (data.succeed) {
+                            layer.msg('已绑定出站为' + formdata.outtag, {
+                                time: 5000
+                            });
+                            location.reload()
+                        }
+                    })
+                },
+                end: function () {//销毁时的回调函数
+                    $("#selectout").css({ "display": "none" })
+                    //关闭时将选择插入的dom结构结构display设置为none
+                }
+            });
+
+
         }
     });
-
-
-
 }
 
-function loadRoutingTable() {
+function createshareqr (data, ip) {
+    $.post("/api/Createshareqr", { tag: data.tag, ip }, (res) => {
+        console.log(res)
+        if (res.succeed) {
+            layer.alert(res.qrstr, function (index) {
+                //do something
+                layer.close(index);
+            });
+        }
+    })
+}
+
+
+function loadRoutingTable () {
     var table = layui.table
         , util = layui.util;
 
@@ -606,7 +673,7 @@ function loadRoutingTable() {
     });
 }
 
-function renderrouting() {
+function renderrouting () {
     loadRoutingTable()
     var table = layui.table
 
@@ -719,7 +786,7 @@ function renderrouting() {
     });
 }
 
-function editroutings() {
+function editroutings () {
 
     var container = document.getElementById("editor");
     editor = new JSONEditor(container, {
@@ -755,7 +822,47 @@ function editroutings() {
     });
 }
 
-function editv2config() {
+function editnginxconfig () {
+
+    $.get("/api/getconfig?type=nginx", (data) => {
+        if (data.succeed == 1) {
+            layer.prompt({
+                formType: 2,
+                value: data.content,
+                title: '编辑nginx conf',
+                area: ['800px', '350px'], //自定义文本域宽高
+                maxlength: 999999
+            }, async function (value, index, elem) {
+                //alert(value); //得到value
+                sts = await saveconfig(20, value)
+                if (sts == 1) {
+                    layer.msg("修改nginx conf 成功")
+                }
+                layer.close(index);
+            });
+
+        } else {
+            layer.msg(data.message, { icon: 5 });
+        }
+    })
+
+}
+
+async function saveconfig (type, content) {
+    return new Promise((resolve, reject) => {
+        $.post("/api/changeconfig", { type, value: content }, (data) => {
+            console.log(data)
+            if (data.succeed) {
+                resolve(1)
+            } else {
+                reject(0)
+            }
+        })
+    })
+}
+
+
+function editv2config () {
     var container = document.getElementById("editor");
     editor = new JSONEditor(container, {
         change: function () {
@@ -790,7 +897,7 @@ function editv2config() {
     });
 }
 
-function CreateDomainRou(type) {
+function CreateDomainRou (type) {
     var urlp = ""
     var con
     var tbid = ""
@@ -841,7 +948,7 @@ function CreateDomainRou(type) {
 }
 
 //创建一个入站
-function Createinbound(type) {
+function Createinbound (type) {
     let Title = ""
     console.log(type)
     switch (type) {
@@ -856,6 +963,9 @@ function Createinbound(type) {
             break
         case 3:
             Title = "创建HTTP代理"
+            break
+        case 4:
+            Title = "创建VMess"
             break
     }
     var index = layer.open({
@@ -884,8 +994,8 @@ function Createinbound(type) {
 
 }
 
-function Createoutbound(type){
-       let Title = ""
+function Createoutbound (type) {
+    let Title = ""
     console.log(type)
     switch (type) {
         case 0:
@@ -919,7 +1029,7 @@ function Createoutbound(type){
 }
 
 //出站tag取协议
-function getoutprotocol(tag) {
+function getoutprotocol (tag) {
     var proto = ""
     v2man.v2config.outbounds.some((v) => {
         if (v.tag == tag) {
@@ -931,7 +1041,7 @@ function getoutprotocol(tag) {
 }
 
 //取配置原始值
-function getv2configoriginal(type, tag, field) {
+function getv2configoriginal (type, tag, field) {
     if (type == 1) {//inbounds
         var resv
         v2man.v2config.inbounds.some((v) => {
@@ -944,7 +1054,7 @@ function getv2configoriginal(type, tag, field) {
     }
 }
 //改配置原始值
-function setv2configoriginal(type, tag, field, value) {
+function setv2configoriginal (type, tag, field, value) {
     if (type == 1) {//inbounds
         v2man.v2config.inbounds.some((v) => {
             if (v.tag == tag) {
@@ -957,14 +1067,14 @@ function setv2configoriginal(type, tag, field, value) {
 
 
 // 判断arr是否为一个数组，返回一个bool值
-function isArray(arr) {
+function isArray (arr) {
     return Object.prototype.toString.call(arr) === '[object Array]';
 }
 
 
 
 // 深度克隆
-function deepClone(obj) {
+function deepClone (obj) {
     if (typeof obj !== "object" && typeof obj !== 'function') {
         return obj;        //原始类型直接返回
     }
@@ -977,6 +1087,6 @@ function deepClone(obj) {
     return o;
 }
 
-function Isequ(a, b) {
+function Isequ (a, b) {
     return a == b
 }

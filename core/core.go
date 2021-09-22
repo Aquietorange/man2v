@@ -19,12 +19,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Aquietorange/tool/container/tqueue"
+	"github.com/Aquietorange/tool/tfile"
+	"github.com/Aquietorange/tool/tnum"
+	"github.com/Aquietorange/tool/tstr"
 	"github.com/gogf/gf/encoding/gjson"
 	"github.com/gogf/gf/util/gconv"
-	"github.com/hujun528-dev/tool/container/tqueue"
-	"github.com/hujun528-dev/tool/tfile"
-	"github.com/hujun528-dev/tool/tnum"
-	"github.com/hujun528-dev/tool/tstr"
 )
 
 var Loginfo *log.Logger
@@ -43,6 +43,9 @@ var awaitmarkV2man chan int = make(chan int, 1) //v2man config
 var OutLine = tqueue.NewCircleQueue(100)
 
 var GetProcessByName_win func(name string) (int64, []string)
+
+//主程序运行目录
+var CorePath string
 
 func Runexe(command string, arg []string) (string, int, error) { //运行的子进程 会在进程退出后 自动关闭，暂无法做到 子进程不受主进程退出影响
 
@@ -236,7 +239,7 @@ func RestartV2ray() {
 			V2pid = gconv.Int(outstr)
 		}
 
-	} else { //windows TODO:存在问题 ，父进程结束后，子进程还在， 启动前需先判断 v2进程 是否已存在，存在则需先结束 ，此类需求的程序 更适合 使用易语言开发
+	} else { //windows
 		if pid > 0 {
 			Shellout("taskkill /f /pid " + strconv.Itoa(int(pid)) + " -t ")
 			//CloseProcess(uint32(pid))
@@ -253,7 +256,6 @@ func RestartV2ray() {
 }
 
 func Getv2config() (pid int, file string) {
-
 	/* pid, cmd := GetProcessByName("v2ray")
 
 	for i, v := range cmd {
@@ -315,14 +317,26 @@ func FindSub(remark string) int {
 	return -1
 }
 
-//查找 指定 tag 或 port 入站是否存在
-
+//查找 指定 tag 或 port 入站是否存在 ,不存在返回-1
 func Findinbounds(tag string, port int) int {
 	for i := range V2json.GetArray("inbounds") {
 		if tag != "" && tag == V2json.GetString("inbounds."+strconv.Itoa(i)+".tag") {
 			return i
 		}
 		if port > 0 && port == V2json.GetInt("inbounds."+strconv.Itoa(i)+".port") {
+			return i
+		}
+	}
+	return -1
+}
+
+//查找 是否存在 指定 tag 的出站,返回 路由下标
+func Findrouteouttag(outtag string) int {
+
+	for i := range V2json.GetArray("routing.rules") {
+
+		if outtag == V2json.GetString("routing.rules."+strconv.Itoa(i)+".outboundTag") {
+
 			return i
 		}
 	}
@@ -558,12 +572,11 @@ func hasv2() bool {
 func init() {
 	var err error
 
-	pathrun, err := tfile.GetCurrentDirectory()
-	if err != nil {
-		os.Exit(0)
+	if !tfile.PathExists(CorePath + "/plugs") {
+		os.Mkdir(CorePath+"/plugs", 0777)
 	}
 
-	if !tfile.PathExists(pathrun + "/v2man.json") { //v2man 配置文件不存在
+	if !tfile.PathExists(CorePath + "/v2man.json") { //v2man 配置文件不存在
 		V2manJson, _ = gjson.LoadContent(`{"v2config": "/etc/v2ray/config.json",
 			"user": "root",
 			"pass": "ab123456"}`)

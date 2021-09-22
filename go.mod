@@ -27,11 +27,11 @@ require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/clbanning/mxj v1.8.5-0.20200714211355-ff02cfb8ea28 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/hujun528-dev/tool v0.0.0-20210907055856-b4ff7499df8f
+	github.com/Aquietorange/tool v0.0.0-20210907055856-b4ff7499df8f
 	go.opentelemetry.io/otel v1.0.0-RC2 // indirect
 	go.opentelemetry.io/otel/trace v1.0.0-RC2 // indirect
 	golang.org/x/text v0.3.4 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c // indirect
 )
 
-replace github.com/hujun528-dev/tool => F:\vuex\go_demo\tool
+replace github.com/Aquietorange/tool => F:\vuex\go_demo\tool

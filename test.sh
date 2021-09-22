@@ -486,6 +486,14 @@ echo "The sum of two numbers is $ret !"
 # chronyc sourcestats -v #查看时间同步源状态：
 # chronyc tracking -v			显示系统时间信息
 
+#不用timedatectl 修改时区
+#如果你正在运行一个比较古老的 Debian 版本，并且timedatectl在你的系统上不可用，你可以通过修改时区的链接文件/etc/localtime到/usr/share/zoneinfo目录下的时区文件来修改时区。
+#识别你想要配置的时区，并且创建一个链接文件:
+
+#ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+
+
 #lsof
 #lsof是系统管理/安全的尤伯工具。将这个工具称之为lsof真实名副其实，因为它是指“列出打开文件（lists openfiles）”。而有一点要切记，在Unix中一切（包括网络套接口）都是文件。
 #lsof -i  显示所有连接和监听端口
@@ -707,6 +715,10 @@ echo "The sum of two numbers is $ret !"
 #export FTP_PROXY="http://127.0.0.1:10708/"
 #export NO_PROXY="127.0.0.1,localhost"
 
+#取消系统代理
+#unset HTTP_PROXY
+#unset HTTPS_PROXY
+#unset FTP_PROXY
 
 #创建Swap交换文件 虚拟内存
 #在这个例子中，我们将创建并激活1G的Swap，要创建更大的Swap，请将1G替换为所需Swap空间的大小。

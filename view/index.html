@@ -43,7 +43,7 @@
             background-color: black;
             height: 100%;
             padding: 3px;
-            max-height: 120px;
+            max-height: 140px;
             box-sizing: border-box;
             color: whitesmoke;
             overflow-y: scroll;
@@ -61,7 +61,7 @@
 
             <div class="layui-row layui-col-space15">
                 <div class="layui-col-md6">
-                    <div class="layui-panel" style="height: 120px;">
+                    <div class="layui-panel" style="height: 160px;">
                         <div style="padding: 30px;">
                             <div class="ui_lineblock">
                                 <div>v2ray 配置文件:</div>
@@ -72,14 +72,23 @@
                                 <div id="v2pid"></div>
                             </div>
                             <div class="ui_lineblock">
+                                <div>Nginx PID:</div>
+                                <div id="nginxpid"></div>
+                            </div>
+                            <div class="ui_lineblock">
                                 <div></div>
                                 <a class="layui-btn layui-btn-xs" onclick="editv2config()"> 编辑v2ray config </a>
+                            </div>
+
+                            <div class="ui_lineblock">
+                                <div></div>
+                                <a class="layui-btn layui-btn-xs" onclick="editnginxconfig()"> 编辑nginx config </a>
                             </div>
                         </div>
                     </div>
                 </div>
                 <div class="layui-col-md6">
-                    <div class="layui-panel" style="height: 120px;">
+                    <div class="layui-panel" style="height: 140px;">
                         <div id="logs">
 
                         </div>
@@ -97,9 +106,9 @@
                         <a class="layui-btn layui-btn-xs" onclick="Createinbound(1)"> 创建一个socks5入站 </a>
                         <a class="layui-btn layui-btn-xs" onclick="Createinbound(3)"> 创建一个HTTP入站 </a>
                         <a class="layui-btn layui-btn-xs" onclick="Createinbound(2)"> 创建一个透明代理 </a>
+                        <a class="layui-btn layui-btn-xs" onclick="Createinbound(4)"> 创建一个vmess入站 </a>
                         <table class="layui-table" id="inbounds" lay-filter="inbounds">
                         </table>
-
                     </div>
                 </div>
                 <div class="layui-colla-item">
@@ -159,8 +168,8 @@
 
             <div class="layui-form-item">
                 <label class="layui-form-label">出口Tag</label>
-                <div class="layui-input-block" id="selectoutview">
 
+                <div class="layui-input-block" id="selectoutview">
                 </div>
             </div>
         </form>
@@ -212,8 +221,8 @@
             <div class="layui-form-item">
                 <label class="layui-form-label">监听ip</label>
                 <div class="layui-input-block">
-                    <input type="number" name="ip" required lay-verify="required" placeholder="请输入ip,默认:0.0.0.0"
-                        autocomplete="off" class="layui-input">
+                    <input name="ip" required lay-verify="required" placeholder="请输入ip,默认:0.0.0.0" autocomplete="off"
+                        class="layui-input">
                 </div>
             </div>
             <div class="layui-form-item">
@@ -268,11 +277,11 @@
                 <label class="layui-form-label">出站bash64内容</label>
                 <div class="layui-input-block">
                     <textarea placeholder="格式:vmess:// ，一行一条" name="outnode" class="layui-textarea"
-                    style="height: 100%;"></textarea>
+                        style="height: 100%;"></textarea>
                 </div>
             </div>
 
-           
+
         </form>
     </div>
 
@@ -280,7 +289,9 @@
 </body>
 <script type="text/html" id="editins">
   <a class="layui-btn layui-btn-xs" lay-event="edit" > 编辑源码 </a>
-<a class="layui-btn layui-btn-xs" lay-event="del"> 删除 </a>
+  <a class="layui-btn layui-btn-xs" lay-event="del"> 删除 </a>
+  <a class="layui-btn layui-btn-xs" lay-event="share"> 分享二维码 </a>
+<a class="layui-btn layui-btn-xs" lay-event="insselectout"> 选择出站 </a>
 </script>
 
 <script type="text/html" id="editouts">

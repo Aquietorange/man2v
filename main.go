@@ -50,18 +50,22 @@ func Run() {
 			r.POST("/api/CreateIpRou", api.CreateIpRou)
 			r.POST("/api/Createinbound", api.Createinbound)
 			r.POST("/api/Createoutbound", api.Createoutbound)
+			r.POST("/api/Createshareqr", api.Createshareqr)
 
 			r.POST("/api/readsub", api.ReadSub)
-			r.GET("/api/getnodelist", api.GetNodeList)
 
+			r.GET("/api/getnodelist", api.GetNodeList)
 			r.GET("/api/getlogs", api.GetLogs)
+			r.GET("/api/getconfig", api.Getconfig)
+			r.POST("/api/post", api.Post)
 
 			r.Static("/layui", "./static/layui")
 
 			r.POST("/login", api.Login)
 			r.GET("/signout", api.Signout)
-			r.GET("/admin", api.Admin)
-			r.GET("/admin/nodelist", api.NodeList)
+
+			r.GET("/admin/*page", api.Admin)
+
 			//r.StaticFile("/admin", "./view/index.html")
 
 		}
