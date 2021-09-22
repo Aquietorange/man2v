@@ -710,14 +710,14 @@ echo "The sum of two numbers is $ret !"
 #docker rmi $(docker images | grep none | awk '{print $3}')
 
 #设置系统代理
-#export HTTP_PROXY="http://127.0.0.1:10708/"
-#export HTTPS_PROXY="http://127.0.0.1:10708/"
-#export FTP_PROXY="http://127.0.0.1:10708/"
+#export http_proxy="http://192.168.1.2:10709/"
+#export https_proxy="http://192.168.1.2:10709/"
+#export FTP_PROXY="http://192.168.1.2:10709/"
 #export NO_PROXY="127.0.0.1,localhost"
 
 #取消系统代理
-#unset HTTP_PROXY
-#unset HTTPS_PROXY
+#unset http_proxy
+#unset https_proxy
 #unset FTP_PROXY
 
 #创建Swap交换文件 虚拟内存
