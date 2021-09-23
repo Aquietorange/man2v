@@ -58,7 +58,7 @@ $.get("/api/config", (data) => {
             renderrouting()
             refreshv2html()
             refreshlogs()
-        } else if (location.pathname == "/admin/nodelist") {
+        } else if (location.pathname == "/admin/nodelist/") {
             handnodelist()
         }
     } else {

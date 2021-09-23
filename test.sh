@@ -506,6 +506,10 @@ echo "The sum of two numbers is $ret !"
 
 #wget
 #wget是Linux中的一个下载文件的工具，wget是在Linux下开发的开放源代码的软件
+#wget本身没有专门设置代理的命令行参数，但是有一个"-e"参数，可以在命令行上指定一个原本出现在".wgetrc"中的设置。于是可以变相在命令行上指定代理：
+#例如：
+#wget  -e "http_proxy=http://127.0.0.1:8087" http://www.subversion.org.cn/svnbook/1.4/
+
 #https://www.cnblogs.com/sx66/p/11887022.html
 
 #bc

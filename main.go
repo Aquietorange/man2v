@@ -1,12 +1,13 @@
 package main
 
 import (
-	"log"
-	"os"
+	"syscall"
 	"v2man/api"
 	"v2man/core"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gogf/gf/os/glog"
+	"github.com/gogf/gf/util/gconv"
 )
 
 func main() { //TODO: 完成 api 认证 和 一键安装  运行 即 结束此项目
@@ -24,8 +25,8 @@ func main() { //TODO: 完成 api 认证 和 一键安装  运行 即 结束此�
 	Run()
 }
 func Run() {
-	buf, _ := os.OpenFile(core.GetCurrentDirectory()+"/log.txt", os.O_CREATE|os.O_RDWR|os.O_APPEND, 0766)
-	core.Loginfo = log.New(buf, "logger: ", log.Lshortfile)
+
+	glog.SetPath("./log/")
 
 	go func() {
 		r := gin.Default()
@@ -57,6 +58,8 @@ func Run() {
 			r.GET("/api/getnodelist", api.GetNodeList)
 			r.GET("/api/getlogs", api.GetLogs)
 			r.GET("/api/getconfig", api.Getconfig)
+			r.GET("/api/plugsinfo", api.Getplugsinfo)
+
 			r.POST("/api/post", api.Post)
 
 			r.Static("/layui", "./static/layui")
@@ -71,7 +74,7 @@ func Run() {
 		}
 		r.Run(":18066")
 	}()
-
+	glog.Info("当前进程id:" + gconv.String(syscall.Getpid()))
 	//core.RestartV2ray()
 	core.Shellstd("journalctl -f -u v2ray.service") //实时读取v2ray服务日志
 	var ch chan int

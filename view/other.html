@@ -25,6 +25,15 @@
         .layui-table-body {
             overflow-x: hidden;
         }
+
+        #logs {
+            background-color: black;
+            height: 100%;
+            padding: 3px;
+            box-sizing: border-box;
+            color: whitesmoke;
+            overflow-y: scroll;
+        }
     </style>
     <script>
         //JS 
@@ -76,12 +85,15 @@
                                     <div class="layui-card-header">内网穿透</div>
                                     <div class="layui-card-body">
                                         <button type="button" class="layui-btn layui-btn-sm"
-                                            onclick="Other.NetPenetrate.startclient()">启动客户端</button>
+                                            onclick="Other.NetPenetrate.start('NetPenetrate','Client')"
+                                            id="lab_NetPenetrate_Client">启动客户端</button>
                                         <button type="button" class="layui-btn layui-btn-sm"
-                                            onclick="Other.NetPenetrate.startserve()">启动服务端</button>
+                                            onclick="Other.NetPenetrate.start('NetPenetrate','Server')"
+                                            id="lab_NetPenetrate_Server">启动服务端</button>
                                         <button type="button" class="layui-btn  layui-btn-warm layui-btn-sm"
-                                            onclick="showaddsub()">编辑配置</button>
-
+                                            onclick="Other.editjsonconfig('NetPenetrate','')">编辑配置</button>
+                                        <button type="button" class="layui-btn  layui-btn-normal layui-btn-sm"
+                                            onclick="Other.showlogs('NetPenetrate')">查看日志</button>
                                     </div>
                                 </div>
                             </div>
@@ -131,8 +143,15 @@
 
 
 
+    <div id="logs">
 
+    </div>
+
+    <div id="editjson" style="display: none;">
+        <div id="editor"></div>
+    </div>
 </body>
+
 
 
 <script src="/layui/common.js"></script>

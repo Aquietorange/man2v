@@ -25,13 +25,50 @@ import (
 	"github.com/gogf/gf/util/gconv"
 )
 
-var postfuns = map[string]interface{}{
-	"NetPenetrate_startclient": func(postdata map[string]interface{}) {
-		fmt.Println(postdata)
+var postfuns = map[string]interface{}{ //此模式 不利于 排查 BUG
+	"NetPenetrate_start_Client": func(postdata map[string]interface{}) string {
+		//fmt.Println(postdata)
 		if !core.Plugs.IsInstalled("NetPenetrate") {
-			core.Plugs.Install("NetPenetrate")
+			if !core.Plugs.Install("NetPenetrate") {
+				fmt.Println("安装失败")
+			}
 		}
+		pluginfo := core.Plugs.FindPlugSub("NetPenetrate", "Client")
+		if pluginfo.Pid == 0 {
+			//启动
+			go core.Plugs.Run("NetPenetrate", "Client")
+			core.V2manJson.Set("plugautorun.NetPenetrate_Client", 1)
+			core.DeferSaveConfg()
+			return "停止客户端"
 
+		} else {
+			//停止
+			core.Plugs.Stop("NetPenetrate", "Client")
+			core.V2manJson.Set("plugautorun.NetPenetrate_Client", 0)
+			core.DeferSaveConfg()
+			return "启动客户端"
+		}
+	},
+	"NetPenetrate_start_Server": func(postdata map[string]interface{}) string {
+		if !core.Plugs.IsInstalled("NetPenetrate") {
+			if !core.Plugs.Install("NetPenetrate") {
+				fmt.Println("安装失败")
+			}
+		}
+		pluginfo := core.Plugs.FindPlugSub("NetPenetrate", "Server")
+		if pluginfo.Pid == 0 {
+			//启动
+			go core.Plugs.Run("NetPenetrate", "Server")
+			core.V2manJson.Set("plugautorun.NetPenetrate_Server", 1)
+			core.DeferSaveConfg()
+			return "停止服务端"
+		} else {
+			//停止
+			core.Plugs.Stop("NetPenetrate", "Server")
+			core.V2manJson.Set("plugautorun.NetPenetrate_Server", 0)
+			core.DeferSaveConfg()
+			return "启动服务端"
+		}
 	},
 }
 
@@ -309,6 +346,12 @@ func Changeconfig(c *gin.Context) {
 				"succeed": 0,
 			})
 		}
+	case "21":
+
+		core.Plugs.SetConfig(c.PostForm("name"), c.PostForm("subname"), c.PostForm("value"))
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 1,
+		})
 	}
 }
 
@@ -626,7 +669,11 @@ func Post(c *gin.Context) {
 
 	fun, ok := postfuns[Type]
 	if ok {
-		CallFuncs(fun, postdata)
+		message, _ := CallFuncs(fun, postdata)
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 1,
+			"message": message,
+		})
 	} else {
 		c.JSON(http.StatusOK, gin.H{
 			"succeed": 0,
@@ -928,12 +975,19 @@ func GetNodeList(c *gin.Context) {
 
 func GetLogs(c *gin.Context) {
 	id := gconv.Int(c.DefaultQuery("id", "0"))
-
-	c.JSON(http.StatusOK, gin.H{
-		"succeed": 1,
-		"logs":    gjson.New(core.OutLine.Getlines(id)),
-	})
-
+	name := c.Query("name")
+	subname := c.Query("subname")
+	if name != "" { //插件日志
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 1,
+			"logs":    gjson.New(core.Plugs.GetLogs(name, subname)),
+		})
+	} else {
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 1,
+			"logs":    gjson.New(core.OutLine.Getlines(id)),
+		})
+	}
 }
 
 func AddSubtest() {
@@ -976,6 +1030,16 @@ func Apiauth() gin.HandlerFunc {
 	}
 }
 
+func Getplugsinfo(c *gin.Context) {
+
+	arrinfo := core.Plugs.GetPlugInfos()
+	c.JSON(http.StatusOK, gin.H{
+		"succeed": 1,
+		"data":    arrinfo,
+	})
+
+}
+
 func Getconfig(c *gin.Context) {
 	Type := c.Query("type")
 	switch Type {
@@ -998,7 +1062,14 @@ func Getconfig(c *gin.Context) {
 				"message": "暂只支持linux系统",
 			})
 		}
-
+	case "plug":
+		plugname := c.Query("name")
+		plugsubname := c.Query("subname")
+		content, _ := core.Plugs.GetConfig(plugname, plugsubname)
+		c.JSON(http.StatusOK, gin.H{
+			"succeed": 1,
+			"content": content,
+		})
 	default:
 
 		c.JSON(http.StatusOK, gin.H{

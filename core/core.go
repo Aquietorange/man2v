@@ -27,7 +27,6 @@ import (
 	"github.com/gogf/gf/util/gconv"
 )
 
-var Loginfo *log.Logger
 var DefaultV2Config = "config.json" //默认 v2 配置路径
 var V2pid int = 0
 
