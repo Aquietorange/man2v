@@ -90,6 +90,7 @@ echo "Date is $DATE"
 #  ${var:+word}	如果变量 var 被定义，那么返回 word，但不改变 var 的值。
 
 
+
 #取磁盘根分区剩余空间
 disk_size=$(df / | awk '/\//{print $4}')
 
@@ -758,4 +759,13 @@ echo "The sum of two numbers is $ret !"
 #tail notes.log           默认显示最后 10 行
 #tail -f notes.log        跟踪名为 notes.log 的文件的增长情况
 #tail -n +20 notes.log    从第 20 行至文件末尾:
+#tail -n 20 notes.log    显示最后 20 行
 #tail -c 10 notes.log     显示文件 notes.log 的最后 10 个字符:
+#docker-compose logs -t --tail="100"  查看容器组 最近100条日志
+#docker-compose logs -f -t --tail="30"  跟随模式
+
+
+#tar -zxvf $V2man_FILE 
+
+#:8913
+#:8484

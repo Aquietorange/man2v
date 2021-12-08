@@ -13,18 +13,20 @@ import (
 
 	"github.com/Aquietorange/tool/container/tqueue"
 	"github.com/Aquietorange/tool/tfile"
+	"github.com/Aquietorange/tool/thttp"
 	"github.com/gogf/gf/encoding/gjson"
 	"github.com/gogf/gf/os/glog"
 )
 
 type PlugInfo struct {
-	Name    string              //插件昵称,同时也是插件目录  可重复
-	SubName string              //插件子模块 名称,默认为main,  不可重复
-	Pid     int64               //插件模块已运行的PID
-	File    string              //相对运行目录  相对主程序 plugs 目录
-	Args    []string            //插件运行 指定参数
-	Conf    string              //配置文件相对路径  相对主程序 plugs 目录
-	Logs    *tqueue.CircleQueue //插件 运行日志
+	Name        string              //插件昵称,同时也是插件目录  可重复
+	SubName     string              //插件子模块 名称,默认为main,  不可重复
+	Pid         int64               //插件模块已运行的PID
+	File        string              //相对运行目录  相对主程序 plugs 目录
+	Args        []string            //插件运行 指定参数
+	Conf        string              //配置文件相对路径  相对主程序 plugs 目录
+	Logs        *tqueue.CircleQueue //插件 运行日志
+	Description string
 }
 
 type Plug struct {
@@ -37,9 +39,10 @@ func (p *Plug) GetPlugInfos() []map[string]interface{} {
 
 	for _, info := range p.Pluginfos {
 		arr = append(arr, map[string]interface{}{
-			"name":    info.Name,
-			"subname": info.SubName,
-			"pid":     info.Pid,
+			"name":        info.Name,
+			"subname":     info.SubName,
+			"pid":         info.Pid,
+			"Description": info.Description,
 		})
 	}
 	return arr
@@ -102,17 +105,35 @@ func (p *Plug) FindPlugSubs(name, subname string) []*PlugInfo {
 
 //安装插件
 func (p *Plug) Install(name string) bool {
-	installsh, ok := Pluginstallsh[name]
+	var installsh string
+	var ok bool
+	if runtime.GOOS == "windows" {
+		installsh, ok = Pluginstallbat[name]
+		bins := thttp.New().GetBytes(installsh)
+		if len(bins) > 100 {
+			ioutil.WriteFile(CorePath+"/plugs/"+name+".zip", bins, 0666)
+			tfile.DeZIPCompress(CorePath+"/plugs/"+name+".zip", CorePath+"/plugs/"+name+"/")
+		}
+		//安装windows 插件 zip
+	} else {
+		installsh, ok = Pluginstallsh[name]
+	}
 	if !ok {
 		return false
 	}
 
-	shf := tfile.PathGetFileName(installsh, true)
-	out, _, _ := Shellout("wget " + installsh + "&&chmod +x " + shf + "&&./" + shf)
-	//fmt.Println(installsh)
-	glog.Info(out)
+	if runtime.GOOS == "linux" {
+		shf := tfile.PathGetFileName(installsh, true)
+		out, _, _ := Shellout("wget " + installsh + "&&chmod +x " + shf + "&&./" + shf)
+		glog.Info(out)
+	}
 
-	if tfile.PathExists(CorePath + "/plugs/NetPenetrate/client") {
+	suffixes := ""
+	if runtime.GOOS == "windows" {
+		suffixes = ".exe"
+	}
+
+	if tfile.PathExists(CorePath + "/plugs/" + name + "/client" + suffixes) {
 		return true
 	} else {
 		return false
@@ -272,6 +293,9 @@ var Plugs = Plug{
 var Pluginstallsh = map[string]string{
 	"NetPenetrate": "https://raw.githubusercontent.com/Aquietorange/man2v/master/test/NetPenetrate.sh",
 }
+var Pluginstallbat = map[string]string{
+	"NetPenetrate": "https://github.com/Aquietorange/man2v/releases/download/v1/netpe_win64.zip",
+}
 
 func init() {
 	suffixes := ""
@@ -280,23 +304,23 @@ func init() {
 	}
 
 	Plugs.Pluginfos = append(Plugs.Pluginfos, &PlugInfo{
-		Name:    "NetPenetrate",
-		SubName: "Client",
-		File:    "/NetPenetrate/client" + suffixes,
-		Conf:    "/NetPenetrate/config.json",
-		Logs:    tqueue.NewCircleQueue(300),
+		Name:        "NetPenetrate",
+		SubName:     "Client",
+		File:        "/NetPenetrate/client" + suffixes,
+		Conf:        "/NetPenetrate/config.json",
+		Logs:        tqueue.NewCircleQueue(300),
+		Description: "remot_port是服务器监听端口，local_port是内网机器(需要网络穿透的pc)监听端口,用户访问服务器上remot_port端口的流量将转发到内网机器上的local_port端口来处理",
 	})
 
 	Plugs.Pluginfos = append(Plugs.Pluginfos, &PlugInfo{
-		Name:    "NetPenetrate",
-		SubName: "Server",
-		File:    "/NetPenetrate/server" + suffixes,
-		Conf:    "/NetPenetrate/config.json",
-		Logs:    tqueue.NewCircleQueue(300),
+		Name:        "NetPenetrate",
+		SubName:     "Server",
+		File:        "/NetPenetrate/server" + suffixes,
+		Conf:        "/NetPenetrate/config.json",
+		Logs:        tqueue.NewCircleQueue(300),
+		Description: "remot_port是服务器监听端口，local_port是内网机器(需要网络穿透的pc)监听端口,用户访问服务器上remot_port端口的流量将转发到内网机器上的local_port端口来处理",
 	})
-
 	autorunp := V2manJson.GetMap("plugautorun")
-
 	for k, p := range autorunp {
 
 		names := strings.Split(k, "_")

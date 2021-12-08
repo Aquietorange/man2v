@@ -37,6 +37,7 @@ require (
 require (
 	github.com/fatih/color v1.12.0 // indirect
 	github.com/mattn/go-colorable v0.1.8 // indirect
+	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2 // indirect
 )
 
 replace github.com/Aquietorange/tool => F:\vuex\go_demo\tool

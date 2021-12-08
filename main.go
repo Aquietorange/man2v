@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/http"
+	"runtime"
 	"syscall"
 	"v2man/api"
 	"v2man/core"
@@ -24,6 +26,24 @@ func main() { //TODO: 完成 api 认证 和 一键安装  运行 即 结束此�
 	//Regsrv()
 	Run()
 }
+
+func Cors() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		method := c.Request.Method
+
+		c.Header("Access-Control-Allow-Origin", "*") // 可将将 * 替换为指定的域名
+		c.Header("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, UPDATE")
+		c.Header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept, Authorization")
+		c.Header("Access-Control-Expose-Headers", "Content-Length, Access-Control-Allow-Origin, Access-Control-Allow-Headers, Cache-Control, Content-Language, Content-Type")
+		c.Header("Access-Control-Allow-Credentials", "true")
+
+		if method == "OPTIONS" {
+			c.AbortWithStatus(http.StatusNoContent)
+		}
+		c.Next()
+	}
+}
+
 func Run() {
 
 	glog.SetPath("./log/")
@@ -32,7 +52,7 @@ func Run() {
 		r := gin.Default()
 
 		{
-
+			r.Use(Cors())
 			r.LoadHTMLGlob("view/*")
 			r.Use(api.Apiauth())
 			r.GET("/api/config", api.Apigetv2config)
@@ -76,7 +96,9 @@ func Run() {
 	}()
 	glog.Info("当前进程id:" + gconv.String(syscall.Getpid()))
 	//core.RestartV2ray()
-	core.Shellstd("journalctl -f -u v2ray.service") //实时读取v2ray服务日志
+	if runtime.GOOS == "linux" {
+		core.Shellstd("journalctl -f -u v2ray.service") //实时读取v2ray服务日志
+	}
 	var ch chan int
 	ch <- 1
 }

@@ -211,7 +211,10 @@ func DeferSaveConfg() {
 }
 
 func SaveV2manConfig() {
-	ioutil.WriteFile("v2man.json", V2manJson.MustToJson(), 07555)
+	err := ioutil.WriteFile("v2man.json", V2manJson.MustToJson(), 0666)
+	if err != nil {
+		fmt.Println(err)
+	}
 }
 
 //重启v2
@@ -448,12 +451,12 @@ func SetActivity(sub, add string, port int64) {
 
 			V2manJson.Set("ActivityNode", V2manJson.Get("nodelist."+sub+"."+strconv.Itoa(i)+".ps"))
 			DeferSaveConfg()
-			//如果 现活动出口 有 前置代理或为系统默认出口规则  则直接添加到 头部成员， 否则替换头部成员
+			//如果 现活动出口 有 前置代理或为系统默认出口规则(freedom|blackhole)  则直接添加到 头部成员， 否则替换头部成员
 			if len(V2json.GetArray("outbounds")) > 0 {
 
 				protocol := V2json.GetString("outbounds.0.protocol")
 
-				if V2json.Contains("outbounds.0.proxySettings") || protocol == "freedom" || protocol == "blackhole" {
+				if true || V2json.Contains("outbounds.0.proxySettings") || protocol == "freedom" || protocol == "blackhole" {
 					vnode := SubnodeTov2node(nodej.(map[string]interface{}), sub+strconv.Itoa(int(tnum.Randint(1111, 9999))))
 
 					v0 := V2json.Get("outbounds.0") //移到尾部
@@ -462,14 +465,16 @@ func SetActivity(sub, add string, port int64) {
 
 					V2json.Append("outbounds", v0)
 
-				} else {
+				} /* else {
 					vnode := SubnodeTov2node(nodej.(map[string]interface{}), sub+strconv.Itoa(int(tnum.Randint(1111, 9999))))
 					V2json.Set("outbounds.0", vnode)
-				}
+				} */
+
 			} else {
 				vnode := SubnodeTov2node(nodej.(map[string]interface{}), sub+strconv.Itoa(int(tnum.Randint(1111, 9999))))
 				V2json.Set("outbounds.0", vnode)
 			}
+
 			DeferRestartV2()
 			break
 		}
