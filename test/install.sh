@@ -351,10 +351,44 @@ EOF
     judge "Nginx 配置修改"
 
 }
-
+#同时支持套cf>>ip:80 和 iplc>>ip:443(可自生成ssl证书)
 nginx_conf_add_cf() {
     touch ${nginx_conf_cf} 
     cat >${nginx_conf_cf} <<EOF
+    server {
+        listen 443 ssl http2;
+        listen [::]:443 http2;
+        ssl_certificate       /data/v2ray.crt;
+        ssl_certificate_key   /data/v2ray.key;
+        ssl_protocols         TLSv1.3;
+        ssl_ciphers           TLS13-AES-256-GCM-SHA384:TLS13-CHACHA20-POLY1305-SHA256:TLS13-AES-128-GCM-SHA256:TLS13-AES-128-CCM-8-SHA256:TLS13-AES-128-CCM-SHA256:EECDH+CHACHA20:EECDH+CHACHA20-draft:EECDH+ECDSA+AES128:EECDH+aRSA+AES128:RSA+AES128:EECDH+ECDSA+AES256:EECDH+aRSA+AES256:RSA+AES256:EECDH+ECDSA+3DES:EECDH+aRSA+3DES:RSA+3DES:!MD5;
+        server_name           serveraddr.com;
+        index index.html index.htm;
+        root  /home/v2wwwroot/grammarly;
+        error_page 400 = /400.html;
+
+        # Config for 0-RTT in TLSv1.3
+        # ssl_early_data on;
+        # ssl_stapling on;
+        # ssl_stapling_verify on;
+        add_header Strict-Transport-Security "max-age=31536000";
+
+        location /ray/
+        {
+        proxy_redirect off;
+        proxy_read_timeout 1200s;
+        proxy_pass http://127.0.0.1:10000;
+        proxy_http_version 1.1;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$http_host;
+
+        # Config for 0-RTT in TLSv1.3
+        # proxy_set_header Early-Data \$ssl_early_data;
+        }
+}
     server {
         listen 80;
         server_name           serveraddr.com;
@@ -381,6 +415,12 @@ EOF
     modify_nginx_other_cf
     judge "Nginx cf配置修改"
 
+}
+
+createssl(){
+openssl genrsa -out /data/v2ray.key 2048
+openssl req -new -key /data/v2ray.key -out /data/v2ray.csr -subj "/C=US/ST=NEYO/L=NEYO/O=LTC/OU=LTC/CN=${domain}/emailAddress="
+openssl x509 -req -sha256 -days 3650 -in /data/v2ray.csr -signkey /data/v2ray.key -out /data/v2ray.crt
 }
 modify_nginx_port() {
     # 找到 ssl http2; 所在行，替换为 tlisten ${port} ssl http2; 并保存
@@ -761,6 +801,7 @@ install_V2manAndV2ray_cf(){
     nginx_exist_check
     v2ray_conf_add_tls
     nginx_conf_add_cf
+    createssl
     web_camouflage
     vmess_qr_config_cf_ws
 
