@@ -348,6 +348,7 @@ EOF
 
     modify_nginx_port
     modify_nginx_other
+    remove_nginx_defalut
     judge "Nginx 配置修改"
 
 }
@@ -413,8 +414,13 @@ EOF
 
     #modify_nginx_port
     modify_nginx_other_cf
+    remove_nginx_defalut
     judge "Nginx cf配置修改"
 
+}
+#移除nginx 默认网站
+remove_nginx_defalut(){
+rm -rf /etc/nginx/sites-enabled/default
 }
 
 createssl(){
@@ -1190,3 +1196,4 @@ editdns(){
 identify_the_operating_system_and_architecture
 menu
 
+#wget -N --no-check-certificate -q -O install.sh "https://raw.githubusercontent.com/Aquietorange/man2v/master/test/install.sh" && chmod +x install.sh && bash install.sh
